@@ -52,16 +52,20 @@ def play_random_video_with_vlc():
     selected = os.path.join(VIDEO_DIR, random.choice(video_files))
     print("Launching VLC for:", selected)
 
-    vlc_process = subprocess.Popen([
-        "vlc",
-        "--no-video-title-show",
-        "--no-video-deco",
-        "--fullscreen",
-        "--video-on-top",
-        "--loop",
-        "--quiet",
-        selected
-    ])
+    vlc_process = play_video_as_user(selected)
+
+def play_video_as_user(video_path):
+user = os.getenv("SUDO_USER") or os.getenv("USER")
+return subprocess.Popen([
+    "sudo", "-u", user, "vlc",
+    "--no-video-title-show",
+    "--no-video-deco",
+    "--fullscreen",
+    "--video-on-top",
+    "--loop",
+    "--quiet",
+    video_path
+])
 
 def stop_vlc():
     global vlc_process
