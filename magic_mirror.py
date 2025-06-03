@@ -58,6 +58,7 @@ def play_video_as_user(video_path):
     user = os.getenv("SUDO_USER") or os.getenv("USER")
     return subprocess.Popen([
         "sudo", "-u", user, "vlc",
+        "--vout=egl",  # or try --vout=directfb or --vout=mmal for Pi
         "--no-video-title-show",
         "--no-video-deco",
         "--fullscreen",
