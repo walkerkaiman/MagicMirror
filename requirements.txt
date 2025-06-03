@@ -1,0 +1,6 @@
+opencv-python
+mediapipe
+pygame
+neopixel
+adafruit-circuitpython-neopixel
+rpi_ws281x

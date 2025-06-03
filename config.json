@@ -1,0 +1,11 @@
+{
+  "exit_delay_seconds": 2,
+  "frame_rate": 30,
+  "fade_steps": 15,
+  "video_directory": "videos/",
+  "black_overlay": "assets/black.png",
+  "led_gpio_pin": 18,
+  "led_count": 60,
+  "led_color": [255, 180, 120],
+  "led_transition_delay_seconds": 1.0
+}
