@@ -130,69 +130,79 @@ def apply_gradient_to_leds(colors):
         pixels[i] = interpolate(colors[1], colors[2], t)
     pixels.show()
 
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            cap.release()
-            if video_player: video_player.release()
-            exit()
+try:
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                cap.release()
+                if video_player: video_player.release()
+                exit()
 
-    ret, cam_frame = cap.read()
-    if not ret:
-        continue
-
-    now = time.time()
-
-    if tracker:
-        success, _ = tracker.update(cam_frame)
-        if success:
-            last_seen = now
-        else:
-            tracker = None
-
-    if not tracker:
-        new_box = detect_person(cam_frame)
-        if new_box:
-            tracker = cv2.TrackerCSRT_create()
-            tracker.init(cam_frame, new_box)
-            last_seen = now
-            playing = True
-            black_alpha = 255
-            video_file = get_random_video_path()
-            video_player = open_video(video_file)
-            ret, first_frame = video_player.read()
-            if ret:
-                first_frame = cv2.cvtColor(first_frame, cv2.COLOR_BGR2RGB)
-                gradient_colors = get_gradient_colors_from_frame(first_frame)
-                apply_gradient_to_leds(gradient_colors)
-            print(f"Person detected — playing: {os.path.basename(video_file)}")
-
-    if playing and (now - last_seen > EXIT_DELAY):
-        playing = False
-        tracker = None
-        if video_player: video_player.release()
-        video_player = None
-        print("Person left — fading to black.")
-        threading.Thread(target=animate_leds_off).start()
-
-    if playing and video_player:
-        ret, vid_frame = video_player.read()
+        ret, cam_frame = cap.read()
         if not ret:
-            video_player.release()
-            video_player = open_video(video_file)
+            continue
+
+        now = time.time()
+
+        if tracker:
+            success, _ = tracker.update(cam_frame)
+            if success:
+                last_seen = now
+            else:
+                tracker = None
+
+        if not tracker:
+            new_box = detect_person(cam_frame)
+            if new_box:
+                tracker = cv2.TrackerCSRT_create()
+                tracker.init(cam_frame, new_box)
+                last_seen = now
+                playing = True
+                black_alpha = 255
+                video_file = get_random_video_path()
+                video_player = open_video(video_file)
+                ret, first_frame = video_player.read()
+                if ret:
+                    first_frame = cv2.cvtColor(first_frame, cv2.COLOR_BGR2RGB)
+                    gradient_colors = get_gradient_colors_from_frame(first_frame)
+                    apply_gradient_to_leds(gradient_colors)
+                print(f"Person detected — playing: {os.path.basename(video_file)}")
+
+        if playing and (now - last_seen > EXIT_DELAY):
+            playing = False
+            tracker = None
+            if video_player: video_player.release()
+            video_player = None
+            print("Person left — fading to black.")
+            threading.Thread(target=animate_leds_off).start()
+
+        if playing and video_player:
             ret, vid_frame = video_player.read()
+            if not ret:
+                video_player.release()
+                video_player = open_video(video_file)
+                ret, vid_frame = video_player.read()
 
-        if ret:
-            vid_frame = cv2.cvtColor(vid_frame, cv2.COLOR_BGR2RGB)
-            surface = pygame.surfarray.make_surface(vid_frame.swapaxes(0, 1))
-            surface = pygame.transform.scale(surface, (frame_width, frame_height))
-            screen.blit(surface, (0, 0))
-            fade_from_black()
-    else:
+            if ret:
+                vid_frame = cv2.cvtColor(vid_frame, cv2.COLOR_BGR2RGB)
+                surface = pygame.surfarray.make_surface(vid_frame.swapaxes(0, 1))
+                surface = pygame.transform.scale(surface, (frame_width, frame_height))
+                screen.blit(surface, (0, 0))
+                fade_from_black()
+        else:
+            screen.blit(black_img, (0, 0))
+            fade_to_black()
+
         screen.blit(black_img, (0, 0))
-        fade_to_black()
-
-    screen.blit(black_img, (0, 0))
-    pygame.display.flip()
-    clock.tick(FRAME_RATE)
+        pygame.display.flip()
+        clock.tick(FRAME_RATE)
+except KeyboardInterrupt:
+    print("Shutting down gracefully...")
+    if video_player:
+        video_player.release()
+    cap.release()
+    pygame.quit()
+    pixels.fill((0, 0, 0))
+    pixels.show()
+    exit(0)
