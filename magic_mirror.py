@@ -6,6 +6,7 @@ import random
 import pygame
 import subprocess
 import threading
+import sys
 
 # --- Load config ---
 with open("config.json") as f:
@@ -93,12 +94,20 @@ def play_random_video_with_vlc():
 # --- Camera Setup ---
 print("Waiting for camera to become available...")
 cap = None
-for _ in range(10):  # Try for ~10 seconds
-    cap = cv2.VideoCapture(1)
-    if cap.isOpened():
-        print("✅ Camera opened successfully.")
-        break
-    time.sleep(1)
+
+try:
+    for _ in range(10):
+        print(f"Trying camera index {i}...")
+        cap = cv2.VideoCapture(_)
+
+        if cap.isOpened():
+            print(f"Camera found at index {i}")
+            break
+        time.sleep(1)
+    raise RuntimeError("No working camera found.")
+except Exception as e:
+    pygame.quit()
+    sys.exit(1)
 
 if not cap or not cap.isOpened():
     raise RuntimeError("Camera failed to open after multiple attempts.")
@@ -108,6 +117,8 @@ try:
     while True:
         ret, frame = cap.read()
         if not ret:
+            print("Warning: Failed to read from camera.")
+            time.sleep(1)
             continue
 
         now = time.time()
