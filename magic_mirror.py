@@ -91,9 +91,17 @@ def play_random_video_with_vlc():
     vlc_process = play_video_as_user(selected)
 
 # --- Camera Setup ---
-cap = cv2.VideoCapture(0)
-if not cap.isOpened():
-    raise RuntimeError("Camera failed to open.")
+print("Waiting for camera to become available...")
+cap = None
+for _ in range(10):  # Try for ~10 seconds
+    cap = cv2.VideoCapture(0)
+    if cap.isOpened():
+        print("✅ Camera opened successfully.")
+        break
+    time.sleep(1)
+
+if not cap or not cap.isOpened():
+    raise RuntimeError("Camera failed to open after multiple attempts.")
 
 # --- Main Loop ---
 try:
