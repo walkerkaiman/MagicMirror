@@ -94,7 +94,7 @@ def play_random_video_with_vlc():
 print("Waiting for camera to become available...")
 cap = None
 for _ in range(10):  # Try for ~10 seconds
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     if cap.isOpened():
         print("✅ Camera opened successfully.")
         break
