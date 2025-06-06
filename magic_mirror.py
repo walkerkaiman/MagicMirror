@@ -17,11 +17,13 @@ FRAME_RATE = config["frame_rate"]
 FADE_STEPS = config["fade_steps"]
 VIDEO_DIR = config["video_directory"]
 BLACK_IMAGE_PATH = config["black_overlay"]
+PERSON_DETECTION_SKIP_INTERVAL = config.get("person_detection_skip_interval", 5)
 
 # --- Global state ---
 person_detected = False
 last_seen = 0
 vlc_process = None
+person_detection_frame_count = 0
 
 # --- Initialize pygame fullscreen window ---
 pygame.init()
@@ -50,13 +52,20 @@ def fade_from_black():
         black_alpha = max(0, black_alpha - fade_step)
         black_overlay.set_alpha(black_alpha)
 
+hog = cv2.HOGDescriptor()
+hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+
 def detect_person(frame):
-    # Placeholder logic: check brightness in the center of the frame
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    h, w = gray.shape
-    center_region = gray[h//3:2*h//3, w//3:2*w//3]
-    avg_brightness = cv2.mean(center_region)[0]
-    return avg_brightness > 50  # very basic trigger
+    # Resize frame for faster processing
+    frame_resized = cv2.resize(frame, (640, 480))
+
+    # Run HOG person detector
+    (regions, _) = hog.detectMultiScale(frame_resized,
+                                        winStride=(8, 8),
+                                        padding=(8, 8),
+                                        scale=1.05)
+
+    return len(regions) > 0
 
 def play_video_as_user(video_path):
     user = os.getenv("SUDO_USER") or os.getenv("USER")
@@ -96,9 +105,9 @@ print("Waiting for camera to become available...")
 cap = None
 
 try:
-    for _ in range(10):
+    for i in range(10):
         print(f"Trying camera index {i}...")
-        cap = cv2.VideoCapture(_)
+        cap = cv2.VideoCapture(i)
 
         if cap.isOpened():
             print(f"Camera found at index {i}")
